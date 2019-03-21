@@ -58,7 +58,7 @@ class ModelConfig(object):
     learning_rate = 1e-4  # 学习率
 
     batch_size = 32  # 每批次的样本数
-    num_epochs = 30  # 在所有训练数据上迭代的次数
+    num_epochs = 20  # 在所有训练数据上迭代的次数
 
-    print_per_batch = 80  # 每多少个batch输出一次结果
-    save_per_batch = 20  # 每多少个batch存入tensorboard
+    print_per_batch = 40  # 每多少个batch输出一次结果
+    save_per_batch = 5  # 每多少个batch存入tensorboard

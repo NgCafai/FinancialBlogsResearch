@@ -13,9 +13,9 @@ from settings import *
 
 
 # 最佳模型保存路径
-save_dir = './best_model/CNN/best_validation'
+save_dir = './best_model/CNN_epoch20/best_validation'
 # tensorboard保存路径
-tensorboard_dir = './tensorboard/CNN'
+tensorboard_dir = './tensorboard/CNN_epoch20'
 
 
 def train():
@@ -36,10 +36,9 @@ def train():
 
     # 配置Saver，用于保存最佳模型
     saver = tf.train.Saver()
-    if not os.path.exists(os.path.split(save_dir)[0]):
-        os.makedirs(os.path.split(save_dir)[0])  # 创建保存模型的文件夹：./best_model/CNN
 
-    # 加载经过处理后的训练数据和验证数据
+
+    # 加载经过处理后的训练数据
     x_train, y_train, _, _ = get_all_samples(date_returns, word_to_id)
 
     with tf.Session() as sess:
@@ -74,7 +73,7 @@ def train():
                     summary = sess.run(merged_train, feed_dict=feed_dict2)
                     writer.add_summary(summary, total_batch)
 
-                # 每多少个batch输出在训练集上的loss和accuracy
+                # 每多少个batch输出在当前batch上的loss和accuracy
                 if total_batch % config.print_per_batch == 0:
                     feed_dict2 = feed_dict.copy()
                     feed_dict2[model.keep_prob] = 1.0
@@ -106,25 +105,31 @@ def train():
     print('total train time:', timedelta(seconds=int(round(end_time - start_time))))
 
 
-# def test():
-#     x_test, y_test = process_file(processed_test_dir, word_to_id, category_to_id, config.seq_length)
-#
-#     with tf.Session() as sess:
-#         sess.run(tf.global_variables_initializer())
-#         saver = tf.train.Saver()
-#         saver.restore(sess=sess, save_path=save_dir)
-#
-#         feed_dict = {
-#             model.input_x: x_test,
-#             model.input_y: y_test,
-#             model.keep_prob: 1.0
-#         }
-#         loss_test, acc_test = sess.run([model.loss, model.accuracy], feed_dict=feed_dict)
-#         msg = 'test loss: {0:>6.2}, test accuracy: {1:>7.2%}'
-#         print(msg.format(loss_test, acc_test))
+def test():
+    _, _, x_test, y_test = get_all_samples(date_returns, word_to_id)
+
+    with tf.Session() as sess:
+        sess.run(tf.global_variables_initializer())
+        saver = tf.train.Saver()
+        saver.restore(sess=sess, save_path=save_dir)
+
+        feed_dict = {
+            model.input_x: x_test,
+            model.input_y: y_test,
+            model.keep_prob: 1.0
+        }
+        loss_test, acc_test = sess.run([model.loss, model.accuracy], feed_dict=feed_dict)
+        msg = 'test loss: {0:>6.2}, test accuracy: {1:>7.2%}'
+        print(msg.format(loss_test, acc_test))
 
 
 if __name__ == '__main__':
+    if not os.path.exists(os.path.split(save_dir)[0]):
+        os.makedirs(os.path.split(save_dir)[0])  # 创建保存模型的文件夹
+
+    if not os.path.exists(tensorboard_dir):
+        os.makedirs(tensorboard_dir)
+
     config = ModelConfig()  # 模型的各项参数
     words, word_to_id = read_vocab('./Util/')  # 读取字典
     date_returns: dict = get_date_returns('./Util/')  # 每个日期接下来三个交易日的return
@@ -132,10 +137,9 @@ if __name__ == '__main__':
     # 建立CNN模型
     model = Model(config)
 
-    train_or_test = 'train'
+    train_or_test = 'test'
     if train_or_test == 'train':
         train()
     else:
-        pass
-        # test()
+        test()
 
