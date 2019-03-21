@@ -3,32 +3,10 @@
 import tensorflow as tf
 
 
-class CNNConfig(object):
-    '''CNN配置参数'''
-
-    embedding_dim = 64  # 词向量维度
-    seq_length = 300  # 序列长度
-    num_classes = 10  # 类别数
-    num_filters = 250  # 卷积层深度
-    kernel_size = [3, 5, 8, 10, 15]  # kernel（或称为filter）的尺寸
-    vocab_size = 5000  # 词汇表大小
-
-    hidden_dim = 128  # 全连接层神经元数目
-
-    l2_lambda = 5e-4  # l2正则化的lambda
-    dropout_keep_prob = 0.5  # dropout保留比列
-    learning_rate = 1e-4  # 学习率
-
-    batch_size = 64  # 每批次的样本数
-    num_epochs = 50  # 在所有训练数据上迭代的次数
-
-    print_per_batch = 80  # 每多少个batch输出一次结果
-    save_per_batch = 20  # 每多少个batch存入tensorboard
-
-
-class CNN(object):
-    '''用于文本分类的CNN模型'''
-
+class Model(object):
+    """
+    用于分类的模型
+    """
     def __init__(self, config):
         self.config = config
 
@@ -39,12 +17,15 @@ class CNN(object):
         self.cnn()
 
     def cnn(self):
-        '''CNN模型'''
+        """
+        CNN模型
+        :return:
+        """
         # Embedding layer
-        with tf.device('/cpu:0'):
+        with tf.device('/gpu:0'):
             with tf.name_scope('embedding_layer'):
                 embedding = tf.get_variable('embedding', shape=[self.config.vocab_size, self.config.embedding_dim])
-                # embedding_input.shape = [None, 300, 64]
+                # embedding_input.shape = [None, 300, 32]
                 embedding_input = tf.nn.embedding_lookup(embedding, self.input_x)
 
         with tf.name_scope('convolution_and_max_pooling'):
@@ -60,9 +41,8 @@ class CNN(object):
                     # global max pooling layer；gmp.shape = [None, 1, num_filters]
                     gmp = tf.reduce_max(conv, reduction_indices=[1])
                     pooled_outputs.append(gmp)
-            pooled_total = tf.concat(pooled_outputs, 1)  # [batch_size, 1, 1, num_filters_total]
+            pooled_total = tf.concat(pooled_outputs, 1)  # [batch_size, 1, 1, num_filters]
             pooled_total_flat = tf.reshape(pooled_total, [-1, self.config.num_filters])
-
 
         with tf.name_scope('fully_connected'):
             fc = tf.layers.dense(pooled_total_flat, self.config.hidden_dim, name='fc1')
@@ -79,10 +59,10 @@ class CNN(object):
             self.loss = tf.reduce_mean(cross_entropy)
 
             # 添加L2正则化：
-            l2_losses = tf.add_n([tf.nn.l2_loss(v) for v in tf.trainable_variables()
-                                  if 'bias' not in v.name and 'embedding' not in v.name]) \
-                        * self.config.l2_lambda
-            self.loss = self.loss + l2_losses
+            # l2_losses = tf.add_n([tf.nn.l2_loss(v) for v in tf.trainable_variables()
+            #                       if 'bias' not in v.name and 'embedding' not in v.name]) \
+            #             * self.config.l2_lambda
+            # self.loss = self.loss + l2_losses
 
             # 优化器
             self.optimizer = tf.train.AdamOptimizer(learning_rate=self.config.learning_rate).minimize(self.loss)

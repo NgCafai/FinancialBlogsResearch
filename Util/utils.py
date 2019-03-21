@@ -3,14 +3,14 @@ import pymysql
 from settings import *
 from collections import Counter
 import pickle
-import keras
+from tensorflow import keras
 import numpy
+from typing import Dict
 
-
-def get_synonyms(file_path) -> dict[str, str]:
+def get_synonyms(file_path):
     """
     返回同义词字典
-    :return:
+    :return: dict[str, str]
     """
     dic = {}
     path = os.path.join(file_path, './synonyms.txt')
@@ -34,7 +34,7 @@ def get_stop_words(file_path) -> set:
     return stop_words
 
 
-def build_vocab(vocab_dir='./vocabulary.txt', vocab_size=4000):
+def build_vocab(vocab_dir='./vocabulary.txt'):
     """
     根据2009年初到2017年末的文本（分词后），选出频率最高的词，构建词典，并保存到vocab_dir中
     :param vocab_dir:
@@ -77,7 +77,7 @@ def read_vocab(file_path):
     :return:
     """
     path = os.path.join(file_path, './vocabulary.txt')
-    with open(file_path, 'r', encoding='utf-8') as f:
+    with open(path, 'r', encoding='utf-8') as f:
         words = [x.strip() for x in f.readlines() if x.strip()]
 
     word_to_id = dict(zip(words, range(len(words))))
@@ -97,14 +97,14 @@ def get_date_returns(file_path: str) -> dict:
     return date_returns
 
 
-def get_all_samples(blogger_names: list, date_returns: dict[datetime, float], word_to_id: dict[str, int]):
+def get_all_samples(date_returns: dict, word_to_id: dict):
     """
     返回训练集和测试集，用id表示
     :return:
     """
     # 连接数据库
     db = pymysql.connect(MYSQL_HOST, MYSQL_USER, MYSQL_PASSWORD, MYSQL_DATABASE,
-                         port=MYSQL_PORT)
+                         port=MYSQL_PORT, charset='utf8')
     cursor = db.cursor()
 
     # 获取训练集所有数据
@@ -144,7 +144,7 @@ def get_all_samples(blogger_names: list, date_returns: dict[datetime, float], wo
         if len(words_id) > seq_length:
             mid = int(len(words_id) / 2)
             words_id = words_id[0: int(seq_length / 3)] \
-                       + words_id[mid - int(seq_length /6): mid + int(seq_length / 6)] \
+                       + words_id[mid - int(seq_length / 6): mid + int(seq_length / 6)] \
                        + words_id[-int(seq_length / 3):]
         x_train.append(words_id)
 
@@ -159,11 +159,11 @@ def get_all_samples(blogger_names: list, date_returns: dict[datetime, float], wo
             date = date + datetime.timedelta(days=-1)
         next_three_day_return = date_returns[date]
         if next_three_day_return < NEGATIVE_BOUNDARY:
-            y_train.append(-1)
-        elif next_three_day_return > POSITIVE_BOUNDARY:
-            y_train.append(1)
-        else:
             y_train.append(0)
+        elif next_three_day_return > POSITIVE_BOUNDARY:
+            y_train.append(2)
+        else:
+            y_train.append(1)
 
     # 构建测试集
     x_test: list[list] = []
@@ -191,11 +191,11 @@ def get_all_samples(blogger_names: list, date_returns: dict[datetime, float], wo
             date = date + datetime.timedelta(days=-1)
         next_three_day_return = date_returns[date]
         if next_three_day_return < NEGATIVE_BOUNDARY:
-            y_test.append(-1)
-        elif next_three_day_return > POSITIVE_BOUNDARY:
-            y_test.append(1)
-        else:
             y_test.append(0)
+        elif next_three_day_return > POSITIVE_BOUNDARY:
+            y_test.append(2)
+        else:
+            y_test.append(1)
 
     # 将x_train中的元素pad为固定长度max_length
     x_train: numpy.array = keras.preprocessing.sequence.pad_sequences(x_train, seq_length, padding='post')
@@ -224,7 +224,7 @@ def batch_iter(x, y_):
         yield x[start_id:end_id], y_[start_id:end_id]
 
 
-if __name__ == '__main__':
+# if __name__ == '__main__':
     # dic = get_synonyms('./')
     # stop_words = get_stop_words('./')
     # print(type(stop_words))
@@ -236,5 +236,5 @@ if __name__ == '__main__':
 
     # build_vocab()
 
-    results = get_all_samples(['余岳桐'])
-    print(results[3])
+    # results = get_all_samples(['余岳桐'])
+    # print(results[3])
