@@ -25,7 +25,7 @@ class Model(object):
         with tf.device('/gpu:0'):
             with tf.name_scope('embedding_layer'):
                 embedding = tf.get_variable('embedding', shape=[self.config.vocab_size, self.config.embedding_dim])
-                # embedding_input.shape = [None, 300, 32]
+                # embedding_input.shape = [None, 300, 16]
                 embedding_input = tf.nn.embedding_lookup(embedding, self.input_x)
 
         with tf.name_scope('convolution_and_max_pooling'):

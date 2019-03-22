@@ -13,9 +13,9 @@ from settings import *
 
 
 # 最佳模型保存路径
-save_dir = './best_model/CNN_epoch20/best_validation'
+save_dir = './best_model/CNN_epoch%d/best_validation'
 # tensorboard保存路径
-tensorboard_dir = './tensorboard/CNN_epoch20'
+tensorboard_dir = './tensorboard/CNN_epoch%d'
 
 
 def train():
@@ -53,7 +53,7 @@ def train():
 
         flag = False
         for epoch in range(config.num_epochs):
-            print('current_epoch(start from 0):', epoch)
+            print('current_epoch(start from 1):', epoch + 1)
             # 用于记录在训练集上的loss和accuracy
             num_samples_trained = 0
             loss_on_whole_train = 0.0
@@ -83,7 +83,8 @@ def train():
                     print(msg.format(total_batch, loss_train, acc_train))
 
                 # 使用optimizer优化模型
-                _, loss_train, acc_train = sess.run([model.optimizer, model.loss, model.accuracy], feed_dict=feed_dict)
+                _, loss_train, acc_train, y_pred_cls = sess.run([model.optimizer, model.loss, model.accuracy, model.y_pred_cls],
+                                                                feed_dict=feed_dict)
                 loss_on_whole_train += float(loss_train * len(y_batch))
                 accuracy_on_whole_train += float(acc_train * len(y_batch))
                 num_samples_trained += len(y_batch)
@@ -93,7 +94,7 @@ def train():
             accuracy_on_whole_train = accuracy_on_whole_train / float(num_samples_trained)
             loss_on_whole_train = loss_on_whole_train / float(num_samples_trained)
             msg = 'Epoch:{0:>5}, loss on whole train:{1:>6.2}, accuracy on whole train: {2:>7.2%}'
-            print(msg.format(epoch, loss_on_whole_train, accuracy_on_whole_train))
+            print(msg.format(epoch + 1, loss_on_whole_train, accuracy_on_whole_train))
             # 保存在训练集上的最佳模型
             if accuracy_on_whole_train > best_acc_on_whole_train:
                 best_acc_on_whole_train = accuracy_on_whole_train
@@ -106,24 +107,39 @@ def train():
 
 
 def test():
-    _, _, x_test, y_test = get_all_samples(date_returns, word_to_id)
+    _, _, x_test, y_test,  = get_all_samples(date_returns, word_to_id)
 
     with tf.Session() as sess:
         sess.run(tf.global_variables_initializer())
         saver = tf.train.Saver()
         saver.restore(sess=sess, save_path=save_dir)
 
-        feed_dict = {
-            model.input_x: x_test,
-            model.input_y: y_test,
-            model.keep_prob: 1.0
-        }
-        loss_test, acc_test = sess.run([model.loss, model.accuracy], feed_dict=feed_dict)
+        num_samples_test = 0
+        loss_on_whole_test = 0.0
+        accuracy_on_whole_test = 0.0
+
+        batch_test = batch_iter(x_test, y_test)
+        for x_batch, y_batch in batch_test:
+            feed_dict = {model.input_x: x_batch,
+                         model.input_y: y_batch,
+                         model.keep_prob: 1}
+            loss_test, acc_test, y_pred_cls = sess.run([model.loss, model.accuracy, model.y_pred_cls],
+                                                       feed_dict=feed_dict)
+            loss_on_whole_test += float(loss_test * len(y_batch))
+            accuracy_on_whole_test += float(acc_test * len(y_batch))
+            num_samples_test += len(y_batch)
+            sess.run(model.optimizer, feed_dict=feed_dict)
+
+        loss_on_whole_test = loss_on_whole_test / float(num_samples_test)
+        accuracy_on_whole_test = accuracy_on_whole_test / float(num_samples_test)
         msg = 'test loss: {0:>6.2}, test accuracy: {1:>7.2%}'
-        print(msg.format(loss_test, acc_test))
+        print(msg.format(loss_on_whole_test, accuracy_on_whole_test))
 
 
 if __name__ == '__main__':
+    config = ModelConfig()  # 模型的各项参数
+    save_dir = save_dir % config.num_epochs
+    tensorboard_dir = tensorboard_dir % config.num_epochs
     if not os.path.exists(os.path.split(save_dir)[0]):
         os.makedirs(os.path.split(save_dir)[0])  # 创建保存模型的文件夹
 

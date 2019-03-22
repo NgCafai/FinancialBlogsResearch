@@ -18,7 +18,7 @@ def process_original_blogs(blogger_name):
     jieba.load_userdict("../../Util/MyDict.txt")
     # 连接数据库
     db = pymysql.connect(MYSQL_HOST, MYSQL_USER, MYSQL_PASSWORD, MYSQL_DATABASE,
-                         port=MYSQL_PORT)
+                         port=MYSQL_PORT, charset='utf8')
     cursor = db.cursor()
 
     # 停用词表
@@ -32,8 +32,7 @@ def process_original_blogs(blogger_name):
         cursor.execute(sql)
         blogs = cursor.fetchall()
     except:
-        print('Error when fetching blogs')
-        return
+        raise Exception('Error when fetching blogs')
 
     # 处理文本并写入MySQL
     for i in range(0, len(blogs)):
@@ -57,6 +56,8 @@ def process_original_blogs(blogger_name):
             content = content[0: content.find('下载浪客app')]
         if '个人对大盘大势数据、心得之记录，不构成对任何人的建议。' in content:
             content = content.replace('个人对大盘大势数据、心得之记录，不构成对任何人的建议。', '')
+        if '个人对大盘大势数据、心得之记录，不构成对任何人的建议，不接受礼物和打赏。转发、点赞是对秦哥最有力的支持！' in content:
+            content = content.replace('个人对大盘大势数据、心得之记录，不构成对任何人的建议，不接受礼物和打赏。转发、点赞是对秦哥最有力的支持！', '')
 
         paragraphs = content.split('\n')
         # 处理每一段

@@ -44,7 +44,7 @@ def build_vocab(vocab_dir='./vocabulary.txt'):
     all_data = []
     # 连接数据库
     db = pymysql.connect(MYSQL_HOST, MYSQL_USER, MYSQL_PASSWORD, MYSQL_DATABASE,
-                         port=MYSQL_PORT)
+                         port=MYSQL_PORT, charset='utf8')
     cursor = db.cursor()
 
     # 构建查询语句，并获取结果
@@ -122,7 +122,8 @@ def get_all_samples(date_returns: dict, word_to_id: dict):
 
     # 获取测试集所有数据
     test_blogs = []
-    for blogger_name in blogger_names:
+    bloggers = ['张中秦']
+    for blogger_name in bloggers:
         sql = "select * from processed_blogs " \
               "where blogger_name = \'%s\' and created_date between \'%s\' and \'%s\' order by created_date desc;" \
               % (blogger_name, test_start, test_end)
@@ -158,11 +159,9 @@ def get_all_samples(date_returns: dict, word_to_id: dict):
         while date not in date_returns.keys():
             date = date + datetime.timedelta(days=-1)
         next_three_day_return = date_returns[date]
-        if next_three_day_return < NEGATIVE_BOUNDARY:
+        if next_three_day_return <= 0:
             y_train.append(0)
-        elif next_three_day_return > POSITIVE_BOUNDARY:
-            y_train.append(2)
-        else:
+        elif next_three_day_return > 0:
             y_train.append(1)
 
     # 构建测试集
@@ -190,20 +189,18 @@ def get_all_samples(date_returns: dict, word_to_id: dict):
         while date not in date_returns.keys():
             date = date + datetime.timedelta(days=-1)
         next_three_day_return = date_returns[date]
-        if next_three_day_return < NEGATIVE_BOUNDARY:
+        if next_three_day_return <= 0:
             y_test.append(0)
-        elif next_three_day_return > POSITIVE_BOUNDARY:
-            y_test.append(2)
-        else:
+        elif next_three_day_return > 0:
             y_test.append(1)
 
     # 将x_train中的元素pad为固定长度max_length
     x_train: numpy.array = keras.preprocessing.sequence.pad_sequences(x_train, seq_length, padding='post')
     # 将y_train中的元素转换为one_hot表示
-    y_train: numpy.array = keras.utils.to_categorical(y_train, num_classes=3)
+    y_train: numpy.array = keras.utils.to_categorical(y_train, num_classes=num_classes)
 
     x_test = keras.preprocessing.sequence.pad_sequences(x_test, seq_length, padding='post')
-    y_test = keras.utils.to_categorical(y_test, num_classes=3)
+    y_test = keras.utils.to_categorical(y_test, num_classes=num_classes)
 
     return x_train, y_train, x_test, y_test
 
@@ -218,13 +215,18 @@ def batch_iter(x, y_):
     data_len = len(x)
     num_batch = int(float(data_len - 1) / float(batch_size)) + 1
 
+    # 对数据进行重排
+    indices = numpy.random.permutation(numpy.arange(data_len))
+    x_shuffle = x[indices]  # 注意这里的x的类型为numpy.ndarray，所以才可以这样做
+    y_shuffle = y_[indices]
+
     for i in range(num_batch):
         start_id = i * batch_size
         end_id = min(start_id + batch_size, data_len)
-        yield x[start_id:end_id], y_[start_id:end_id]
+        yield x_shuffle[start_id:end_id], y_shuffle[start_id:end_id]
 
 
-# if __name__ == '__main__':
+if __name__ == '__main__':
     # dic = get_synonyms('./')
     # stop_words = get_stop_words('./')
     # print(type(stop_words))
@@ -234,7 +236,17 @@ def batch_iter(x, y_):
     # for k, v in dic.items():
     #     print(k, v)
 
-    # build_vocab()
+    build_vocab()
 
     # results = get_all_samples(['余岳桐'])
     # print(results[3])
+
+    # words, word_to_id = read_vocab('./')  # 读取字典
+    # date_returns: dict = get_date_returns('./')  # 每个日期接下来三个交易日的return
+    # x_train, y_train, x_test, y_test = get_all_samples(date_returns, word_to_id)
+    # y_test = numpy.argmax(y_test, 1).tolist()
+    # print(len(y_test))
+    # print(len([x for x in y_test if x == 0]))
+    # print(len([x for x in y_test if x == 1]))
+    # print(len([x for x in y_test if x == 2]))
+

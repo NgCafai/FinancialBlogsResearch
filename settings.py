@@ -35,9 +35,10 @@ POSITIVE_BOUNDARY = 0.0171055476283131
 
 
 # 训练模型的配置参数
-seq_length = 300  # 序列长度
-batch_size = 32  # 每批次的样本数
-vocab_size = 4000  # 词汇表大小
+seq_length = 150  # 序列长度
+batch_size = 16  # 每批次的样本数
+vocab_size = 5000  # 词汇表大小
+num_classes = 2
 
 
 class ModelConfig(object):
@@ -45,11 +46,11 @@ class ModelConfig(object):
     模型配置参数
     """
     embedding_dim = 32  # 词向量维度
-    seq_length = 300  # 序列长度
-    num_classes = 3  # 类别数
+    seq_length = 150  # 序列长度
+    num_classes = 2  # 类别数
     num_filters = 210  # 卷积层深度
     kernel_size = [3, 5, 8]  # kernel（或称为filter）的尺寸
-    vocab_size = 4000    # 词汇表大小
+    vocab_size = 5000    # 词汇表大小
 
     hidden_dim = 64  # 全连接层神经元数目
 
@@ -57,8 +58,8 @@ class ModelConfig(object):
     dropout_keep_prob = 0.5  # dropout保留比列
     learning_rate = 1e-4  # 学习率
 
-    batch_size = 32  # 每批次的样本数
-    num_epochs = 20  # 在所有训练数据上迭代的次数
+    batch_size = 16  # 每批次的样本数
+    num_epochs = 3  # 在所有训练数据上迭代的次数
 
     print_per_batch = 40  # 每多少个batch输出一次结果
     save_per_batch = 5  # 每多少个batch存入tensorboard
