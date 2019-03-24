@@ -59,10 +59,10 @@ class Model(object):
             self.loss = tf.reduce_mean(cross_entropy)
 
             # 添加L2正则化：
-            # l2_losses = tf.add_n([tf.nn.l2_loss(v) for v in tf.trainable_variables()
-            #                       if 'bias' not in v.name and 'embedding' not in v.name]) \
-            #             * self.config.l2_lambda
-            # self.loss = self.loss + l2_losses
+            l2_losses = tf.add_n([tf.nn.l2_loss(v) for v in tf.trainable_variables()
+                                  if 'bias' not in v.name and 'embedding' not in v.name]) \
+                        * self.config.l2_lambda
+            self.loss = self.loss + l2_losses
 
             # 优化器
             self.optimizer = tf.train.AdamOptimizer(learning_rate=self.config.learning_rate).minimize(self.loss)

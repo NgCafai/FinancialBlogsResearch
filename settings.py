@@ -45,10 +45,10 @@ class ModelConfig(object):
     """
     模型配置参数
     """
-    embedding_dim = 32  # 词向量维度
+    embedding_dim = 16  # 词向量维度
     seq_length = 150  # 序列长度
     num_classes = 2  # 类别数
-    num_filters = 210  # 卷积层深度
+    num_filters = 90  # 卷积层深度
     kernel_size = [3, 5, 8]  # kernel（或称为filter）的尺寸
     vocab_size = 5000    # 词汇表大小
 
@@ -59,7 +59,7 @@ class ModelConfig(object):
     learning_rate = 1e-4  # 学习率
 
     batch_size = 16  # 每批次的样本数
-    num_epochs = 3  # 在所有训练数据上迭代的次数
+    num_epochs = 4  # 在所有训练数据上迭代的次数
 
     print_per_batch = 40  # 每多少个batch输出一次结果
     save_per_batch = 5  # 每多少个batch存入tensorboard

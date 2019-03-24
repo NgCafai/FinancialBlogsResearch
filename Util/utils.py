@@ -97,7 +97,7 @@ def get_date_returns(file_path: str) -> dict:
     return date_returns
 
 
-def get_all_samples(date_returns: dict, word_to_id: dict):
+def get_all_samples(date_returns: dict, word_to_id: dict, bloggers=blogger_names):
     """
     返回训练集和测试集，用id表示
     :return:
@@ -109,7 +109,7 @@ def get_all_samples(date_returns: dict, word_to_id: dict):
 
     # 获取训练集所有数据
     train_blogs = []
-    for blogger_name in blogger_names:
+    for blogger_name in bloggers:
         sql = "select * from processed_blogs " \
               "where blogger_name = \'%s\' and created_date between \'%s\' and \'%s\' order by created_date desc;" \
               % (blogger_name, train_start, train_end)
@@ -122,7 +122,6 @@ def get_all_samples(date_returns: dict, word_to_id: dict):
 
     # 获取测试集所有数据
     test_blogs = []
-    bloggers = ['张中秦']
     for blogger_name in bloggers:
         sql = "select * from processed_blogs " \
               "where blogger_name = \'%s\' and created_date between \'%s\' and \'%s\' order by created_date desc;" \
@@ -205,7 +204,7 @@ def get_all_samples(date_returns: dict, word_to_id: dict):
     return x_train, y_train, x_test, y_test
 
 
-def batch_iter(x, y_):
+def batch_iter(x, y_, shuffle=True):
     """
     生成器：每迭代一次，生成一个batch的数据
     :param x:
@@ -217,8 +216,9 @@ def batch_iter(x, y_):
 
     # 对数据进行重排
     indices = numpy.random.permutation(numpy.arange(data_len))
-    x_shuffle = x[indices]  # 注意这里的x的类型为numpy.ndarray，所以才可以这样做
-    y_shuffle = y_[indices]
+    # 注意这里的x的类型为numpy.ndarray，所以才可以这样做
+    x_shuffle = x[indices] if shuffle else x
+    y_shuffle = y_[indices] if shuffle else y_
 
     for i in range(num_batch):
         start_id = i * batch_size
@@ -226,7 +226,7 @@ def batch_iter(x, y_):
         yield x_shuffle[start_id:end_id], y_shuffle[start_id:end_id]
 
 
-if __name__ == '__main__':
+# if __name__ == '__main__':
     # dic = get_synonyms('./')
     # stop_words = get_stop_words('./')
     # print(type(stop_words))
@@ -236,7 +236,7 @@ if __name__ == '__main__':
     # for k, v in dic.items():
     #     print(k, v)
 
-    build_vocab()
+    # build_vocab()
 
     # results = get_all_samples(['余岳桐'])
     # print(results[3])
@@ -244,9 +244,9 @@ if __name__ == '__main__':
     # words, word_to_id = read_vocab('./')  # 读取字典
     # date_returns: dict = get_date_returns('./')  # 每个日期接下来三个交易日的return
     # x_train, y_train, x_test, y_test = get_all_samples(date_returns, word_to_id)
-    # y_test = numpy.argmax(y_test, 1).tolist()
-    # print(len(y_test))
-    # print(len([x for x in y_test if x == 0]))
-    # print(len([x for x in y_test if x == 1]))
+    # y_ = numpy.argmax(y_train, 1).tolist()
+    # print(len(y_))
+    # print(len([label for label in y_ if label == 0]))
+    # print(len([label for label in y_ if label == 1]))
     # print(len([x for x in y_test if x == 2]))
 

@@ -12,6 +12,8 @@ from model import *
 from settings import *
 
 
+# 在所有数据上预训练得到的模型
+save_dir_on_whole_train = '../best_model/CNN_epoch2/best_validation'
 # 最佳模型保存路径
 save_dir = './best_model/CNN_epoch%d/best_validation'
 # tensorboard保存路径
@@ -37,12 +39,12 @@ def train():
     # 配置Saver，用于保存最佳模型
     saver = tf.train.Saver()
 
-
     # 加载经过处理后的训练数据
-    x_train, y_train, _, _ = get_all_samples(date_returns, word_to_id)
+    x_train, y_train, _, _ = get_all_samples(date_returns, word_to_id, ['张中秦'])
 
     with tf.Session() as sess:
         sess.run(tf.global_variables_initializer())
+        saver.restore(sess=sess, save_path=save_dir_on_whole_train)
         writer.add_graph(sess.graph)
 
         total_batch = 0  # 当前已训练的总批次
@@ -107,11 +109,12 @@ def train():
 
 
 def test():
-    _, _, x_test, y_test,  = get_all_samples(date_returns, word_to_id, ['张中秦'])
+    _, _, x_test, y_test = get_all_samples(date_returns, word_to_id, ['张中秦'])
+
     with tf.Session() as sess:
         sess.run(tf.global_variables_initializer())
         saver = tf.train.Saver()
-        saver.restore(sess=sess, save_path=save_dir)
+        saver.restore(sess=sess, save_path=save_dir_on_whole_train)
 
         num_samples_test = 0
         loss_on_whole_test = 0.0
@@ -137,6 +140,11 @@ def test():
 
 if __name__ == '__main__':
     config = ModelConfig()  # 模型的各项参数
+
+    # 根据不同的博主调整seq_length
+    config.seq_length = 150
+    config.num_epochs = 2
+
     save_dir = save_dir % config.num_epochs
     tensorboard_dir = tensorboard_dir % config.num_epochs
     if not os.path.exists(os.path.split(save_dir)[0]):
@@ -145,9 +153,8 @@ if __name__ == '__main__':
     if not os.path.exists(tensorboard_dir):
         os.makedirs(tensorboard_dir)
 
-    config = ModelConfig()  # 模型的各项参数
-    words, word_to_id = read_vocab('./Util/')  # 读取字典
-    date_returns: dict = get_date_returns('./Util/')  # 每个日期接下来三个交易日的return
+    words, word_to_id = read_vocab('../Util/')  # 读取字典
+    date_returns: dict = get_date_returns('../Util/')  # 每个日期接下来三个交易日的return
     config.vocab_size = len(words)
     # 建立CNN模型
     model = Model(config)
